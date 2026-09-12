@@ -1,0 +1,12 @@
+# Cloudflare Workers deployment configuration boundary.
+# Runtime bindings, routes, compatibility settings, and secret references
+# are intentionally finalized during the Cloudflare implementation phase.
+
+name = "personal-ai-google-ecosystem"
+
+# compatibility_date = "YYYY-MM-DD"
+# main = "backend/worker.js"
+# workers_dev = true
+
+# Secrets must be supplied through Cloudflare secret storage.
+# Never put API keys, OAuth secrets, or tokens in this file.

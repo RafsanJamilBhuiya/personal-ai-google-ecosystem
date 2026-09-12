@@ -1,0 +1,11 @@
+{
+  "name": "personal-ai-google-ecosystem",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Personal AI + Google Services Ecosystem — single-user automation platform",
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  }
+}
