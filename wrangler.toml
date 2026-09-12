@@ -5,7 +5,8 @@ workers_dev = true
 
 [vars]
 APP_ENV = "production"
-FRONTEND_ORIGIN = "*"
+# Set this to the exact deployed frontend origin before production use.
+FRONTEND_ORIGIN = ""
 
 # Create this KV namespace in Cloudflare and replace the placeholder ID before deploy.
 [[kv_namespaces]]
