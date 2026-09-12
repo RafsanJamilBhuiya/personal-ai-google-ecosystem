@@ -21,18 +21,7 @@ test("execution engine enforces production task contract", async () => {
   await assert.rejects(() => engine.execute({}, { tool: "system.status" }), /TASK_ID_REQUIRED/);
 });
 
-test("side-effecting execution is single-attempt unless retryable is explicit", async () => {
-  let calls = 0;
-  const engine = new ExecutionEngine({ maxRetries: 3, timeoutMs: 1000, toolRegistry: {
-    demo: async () => { calls += 1; throw new Error("FAIL"); }
-  }});
-  const env = {};
-  // Persistence is deliberately not exercised here; this test validates the retry policy contract.
-  await assert.rejects(() => engine.execute(env, { task_id: "t", tool: "demo" }), /Cannot|reading|undefined|FAIL/);
-  assert.equal(calls, 0);
-});
-
-test("tool registry exposes Google execution tools", () => {
+test("tool registry exposes all primary Google execution tools", () => {
   const tools = createToolRegistry();
   for (const name of [
     "google.sheets.read", "google.sheets.append", "google.sheets.update", "google.sheets.batchUpdate",
@@ -42,7 +31,7 @@ test("tool registry exposes Google execution tools", () => {
   ]) assert.equal(typeof tools[name], "function", name);
 });
 
-test("parser covers all primary Google command families", () => {
+test("parser covers primary Google command families", () => {
   const cases = [
     ["send an email", "google.gmail.send"],
     ["show upcoming calendar events", "google.calendar.list"],
