@@ -1,0 +1,11 @@
+import { googleFetch } from "../google/client.js";
+
+export async function listEvents(env, calendarId = "primary", timeMin = new Date().toISOString(), maxResults = 50) {
+  const params = new URLSearchParams({ timeMin, maxResults: String(maxResults), singleEvents: "true", orderBy: "startTime" });
+  return googleFetch(env, `/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?${params}`);
+}
+
+export async function createEvent(env, event, calendarId = "primary") {
+  if (!event?.summary || !event?.start || !event?.end) throw new Error("summary, start and end are required");
+  return googleFetch(env, `/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`, { method: "POST", body: JSON.stringify(event) });
+}
