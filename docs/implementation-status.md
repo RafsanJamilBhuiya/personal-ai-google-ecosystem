@@ -1,19 +1,22 @@
-# Implementation Status
+# Implementation status
 
-**Current milestone:** Non-code repository foundation and structural organization.
+## This batch
+- Root runtime configuration: implemented
+- Worker entry point: implemented
+- Health/status API: implemented
+- Common command endpoint: implemented
+- Frontend entry point: implemented
+- 14 planned page entry points: implemented
+- Shared frontend CSS/JS: implemented
+- Copilot repository instructions: implemented
 
-| Area | Status | Notes |
-|---|---|---|
-| Repository boundary | Complete | New project repository confirmed |
-| Root structure | In progress | Structure markers are being established |
-| Documentation boundary | In progress | Master and supporting references established |
-| Runtime source code | Not started in this milestone | Intentionally excluded from structure-only work |
-| Google Cloud integration | Not started | Requires project-specific setup |
-| Google OAuth | Not started | Requires credentials and redirect configuration |
-| Google Sheets database | Blueprint | Schema documented; live workbook setup pending |
-| AI providers | Blueprint | Provider availability/keys require later verification |
-| Cloudflare deployment | Configuration boundary | Runtime deployment pending |
-| CI/CD | Structure boundary | Workflow implementation pending |
-| Production validation | Pending | Requires functional implementation |
+## Not yet live-validated
+- Google OAuth and Google APIs
+- Google Sheets live database
+- AI provider credentials/router against live providers
+- Cloudflare production deployment
+- GitHub Pages production configuration
+- Realtime transport
+- Full execution/retry/recovery engine
 
-**Important:** Presence of folders/files must never be interpreted as functional completion.
+These items require external account configuration and/or additional integration work. File existence is not treated as feature completion.
