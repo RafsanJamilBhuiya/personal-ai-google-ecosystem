@@ -16,12 +16,18 @@ export const SHEETS = Object.freeze({
 });
 
 const now = () => new Date().toISOString();
-const id = (prefix) => `${prefix}_${crypto.randomUUID()}`;
+const id = prefix => `${prefix}_${crypto.randomUUID()}`;
 
 export function rowFor(sheet, record) {
   const fields = SHEETS[sheet];
   if (!fields) throw new Error(`Unknown database sheet: ${sheet}`);
-  return fields.map((field) => record?.[field] ?? "");
+  return fields.map(field => record?.[field] ?? "");
+}
+
+export function recordFromRow(sheet, row) {
+  const fields = SHEETS[sheet];
+  if (!fields) throw new Error(`Unknown database sheet: ${sheet}`);
+  return Object.fromEntries(fields.map((field, index) => [field, row?.[index] ?? ""]));
 }
 
 export async function appendRecord(env, sheet, record) {
@@ -32,6 +38,17 @@ export async function readSheet(env, sheet) {
   if (!SHEETS[sheet]) throw new Error(`Unknown database sheet: ${sheet}`);
   const result = await readValues(env, `${sheet}!A:ZZ`);
   return { headers: SHEETS[sheet], rows: result.values || [] };
+}
+
+export async function listRecords(env, sheet) {
+  const { rows } = await readSheet(env, sheet);
+  return rows.slice(1).filter(row => row.some(Boolean)).map(row => recordFromRow(sheet, row));
+}
+
+export async function findRecord(env, sheet, keyField, keyValue) {
+  if (!SHEETS[sheet]?.includes(keyField)) throw new Error("DATABASE_KEY_INVALID");
+  const records = await listRecords(env, sheet);
+  return records.find(record => String(record[keyField]) === String(keyValue)) || null;
 }
 
 export async function appendTask(env, task) {
@@ -53,4 +70,25 @@ export async function appendErrorLog(env, record) {
 export async function updateRange(env, sheet, range, values) {
   if (!SHEETS[sheet]) throw new Error(`Unknown database sheet: ${sheet}`);
   return updateValues(env, `${sheet}!${range}`, values);
+}
+
+export async function updateRecord(env, sheet, keyField, keyValue, patch) {
+  const fields = SHEETS[sheet];
+  if (!fields?.includes(keyField)) throw new Error("DATABASE_KEY_INVALID");
+  const { rows } = await readSheet(env, sheet);
+  const index = rows.findIndex((row, i) => i > 0 && String(row[fields.indexOf(keyField)]) === String(keyValue));
+  if (index < 1) throw new Error("RECORD_NOT_FOUND");
+  const current = recordFromRow(sheet, rows[index]);
+  const updated = { ...current, ...patch, [keyField]: current[keyField] };
+  return updateValues(env, `${sheet}!A${index + 1}`, [rowFor(sheet, updated)]);
+}
+
+export async function deleteRecord(env, sheet, keyField, keyValue) {
+  // Sheets values API has no row-delete primitive here; blanking a record preserves audit/history.
+  const fields = SHEETS[sheet];
+  if (!fields?.includes(keyField)) throw new Error("DATABASE_KEY_INVALID");
+  const { rows } = await readSheet(env, sheet);
+  const index = rows.findIndex((row, i) => i > 0 && String(row[fields.indexOf(keyField)]) === String(keyValue));
+  if (index < 1) throw new Error("RECORD_NOT_FOUND");
+  return updateValues(env, `${sheet}!A${index + 1}`, [fields.map(() => "")]);
 }
