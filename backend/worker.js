@@ -13,6 +13,7 @@ import { drive, docs, forms, blogger } from "./google/services/index.js";
 import { parseCommand } from "./agent/parser.js";
 import { planTask } from "./agent/planner.js";
 import { appendActivityLog, appendErrorLog, readSheet } from "./database/sheets-engine.js";
+import { syncGoogleServiceMetadata, upsertPlatformMetadata } from "./database/integration-metadata.js";
 import { createTask, findTask } from "./database/task-store.js";
 import { initializeDatabase } from "./database/initialize.js";
 import { taskEventStream } from "./realtime/index.js";
@@ -26,7 +27,9 @@ const withCors=(response,origin)=>{Object.entries(headers(origin)).forEach(([k,v
 
 export default {async fetch(request,env){
  const origin=originFor(env,request);if(request.method==="OPTIONS")return new Response(null,{status:204,headers:headers(origin)});
- const providers=createProviderRegistry(env),aiRouter=new AIRouter({providers,env}),googleServices=createGoogleServiceRegistry(env),toolRegistry=createToolRegistry(env);
+ const providers=createProviderRegistry(env),aiRouter=new AIRouter({providers,env});
+ const googleAuth=await oauthStatus(env);
+ const googleServices=await createGoogleServiceRegistry(env,googleAuth),toolRegistry=createToolRegistry(env);
  const router=createRouter(new Map([
   ["GET /health",async()=>json({ok:true,service:"worker",time:new Date().toISOString()},200,origin)],
   ["GET /api/status",async()=>json({ok:true,environment:env.APP_ENV||"development",auth:{configured:authConfigured(env)},integrations:{google:[...googleServices.values()].map(({id,status,enabled})=>({id,status,enabled})),ai:aiRouter.listProviders()}},200,origin)],
@@ -36,8 +39,10 @@ export default {async fetch(request,env){
   ["GET /api/auth/status",async req=>{const s=await getSession(env,req);return json({ok:true,authenticated:Boolean(s),email:s?.email||null,createdAt:s?.createdAt||null,lastActiveAt:s?.lastActiveAt||null},200,origin);}],
   ["POST /api/auth/logout",async req=>{await logout(env,req);return json({ok:true,authenticated:false},200,origin,{"set-cookie":clearSessionCookie});}],
   ["GET /api/admin/integrations",async()=>json({ok:true,integrations:getIntegrationStatus({googleAuth:await oauthStatus(env),aiProviders:aiRouter.listProviders(),env})},200,origin)],
+  ["POST /api/admin/integrations/sync",async()=>{const auth=await oauthStatus(env);const services=[... (await createGoogleServiceRegistry(env,auth)).values()];const result=await syncGoogleServiceMetadata(env,services);for(const platform of ["google","github","cloudflare","ai"]){const status=getIntegrationStatus({googleAuth:auth,aiProviders:aiRouter.listProviders(),env}).find(x=>x.id===platform);if(status)await upsertPlatformMetadata(env,{platform,status:status.status,account:platform==="google"?(auth.connected?"authorized":""):"",details:status.status});}return json({ok:true,result,services},200,origin);}],
+  ["GET /api/admin/persistence/status",async()=>{const auth=await oauthStatus(env);return json({ok:true,kv:{binding:Boolean(env.OAUTH_TOKEN_STORE),oauthTokenStore:Boolean(env.OAUTH_TOKEN_STORE),sessionAndOtpStore:Boolean(env.OAUTH_TOKEN_STORE)},googleOAuth:auth},200,origin);}],
   ["GET /api/realtime",async req=>{const u=new URL(req.url),id=u.searchParams.get("taskId");if(!id)throw new HttpError(400,"TASK_ID_REQUIRED","taskId is required");const lastEventId=Number(u.searchParams.get("lastEventId")||req.headers.get("last-event-id")||0);return withCors(taskEventStream(env,id,{lastEventId:Number.isFinite(lastEventId)?lastEventId:0}),origin);}],
-  ["GET /api/google/setup/status",async()=>json({ok:true,auth:await oauthStatus(env),services:[...googleServices.values()].map(({id,name,status,enabled})=>({id,name:name||id,status,enabled}))},200,origin)],
+  ["GET /api/google/setup/status",async()=>json({ok:true,auth:await oauthStatus(env),services:[... (await createGoogleServiceRegistry(env,await oauthStatus(env))).values()].map(({id,name,status,enabled})=>({id,name:name||id,status,enabled}))},200,origin)],
   ["GET /api/google/auth/url",async()=>json({ok:true,authorization_url:await beginOAuth(env)},200,origin)],
   ["GET /api/google/auth/callback",async req=>{const u=new URL(req.url);return json({ok:true,...await completeOAuth(env,u.searchParams.get("state"),u.searchParams.get("code")),message:"Google authorization stored securely in the configured token store."},200,origin);}],
   ["POST /api/google/auth/disconnect",async()=>{await clearTokens(env);return json({ok:true,connected:false},200,origin);}],
