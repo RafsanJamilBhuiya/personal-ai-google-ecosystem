@@ -8,6 +8,7 @@
     "check": "node scripts/check-structure.mjs",
     "test": "node --test tests/unit/*.test.mjs",
     "build": "node scripts/check-structure.mjs",
+    "live:verify": "node scripts/live-verify.mjs",
     "dev": "wrangler dev backend/worker.js",
     "deploy": "wrangler deploy backend/worker.js"
   },
