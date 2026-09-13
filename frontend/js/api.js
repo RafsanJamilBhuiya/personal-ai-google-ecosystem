@@ -1,3 +1,5 @@
+import "./runtime-config.js";
+
 const configuredWorkerUrl = typeof window !== "undefined" ? window.PERSONAL_AI_WORKER_URL : "";
 const WORKER_URL = String(configuredWorkerUrl || "").trim().replace(/\/$/, "");
 
@@ -42,6 +44,7 @@ export function watchTask(taskId, { onConnected, onTask, onHeartbeat, onTimeout,
   if (!taskId || typeof EventSource === "undefined") return null;
   if (!WORKER_URL) { onError?.({ code: "WORKER_URL_NOT_CONFIGURED" }); return null; }
   let source = null, attempts = 0, closedByClient = false, lastEventId = "", timeout;
+  const close = (notify = true) => { clearTimeout(timeout); source?.close(); if (notify && !closedByClient) onClose?.({ task_id: taskId, reason: "closed" }); };
   const armTimeout = () => { clearTimeout(timeout); timeout = setTimeout(() => { onTimeout?.({ task_id: taskId, code: "REALTIME_TIMEOUT" }); close(); }, timeoutMs); };
   const connect = () => {
     const url = new URL(`${WORKER_URL}/api/realtime`);
@@ -58,10 +61,9 @@ export function watchTask(taskId, { onConnected, onTask, onHeartbeat, onTimeout,
       if (!closedByClient && reconnect && attempts < maxReconnects) { attempts += 1; setTimeout(connect, Math.min(1000 * 2 ** (attempts - 1), 10000)); }
       else if (!closedByClient) onClose?.({ task_id: taskId, reason: "connection_error" });
     });
-    source.addEventListener("closed", e => { try { onClose?.(JSON.parse(e.data)); } catch { onClose?.({ task_id: taskId }); } close(); });
+    source.addEventListener("closed", e => { if (!closedByClient) { try { onClose?.(JSON.parse(e.data)); } catch { onClose?.({ task_id: taskId }); } } close(false); });
     armTimeout();
   };
-  const close = () => { clearTimeout(timeout); source?.close(); if (!closedByClient) { closedByClient = true; onClose?.({ task_id: taskId, reason: "closed" }); } };
   connect();
-  return { close: () => { closedByClient = true; clearTimeout(timeout); source?.close(); }, reconnect: () => { closedByClient = false; attempts = 0; source?.close(); connect(); } };
+  return { close: () => { closedByClient = true; close(false); }, reconnect: () => { closedByClient = false; attempts = 0; source?.close(); connect(); } };
 }
