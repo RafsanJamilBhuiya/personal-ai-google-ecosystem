@@ -1,1 +1,36 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Settings</title><link rel="stylesheet" href="../css/app.css"></head><body><main><section><h1>Settings</h1><div class="panel"><p>Environment, Worker URL, service toggles and user preferences belong here. Secrets are never entered into source-controlled files.</p></div></section></main></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Settings · Personal AI</title>
+  <link rel="stylesheet" href="../css/app.css">
+</head>
+<body>
+  <main>
+    <section>
+      <h1>Settings</h1>
+      <div class="panel">
+        <h2>Backend connection</h2>
+        <p id="worker-state">Checking Worker connection…</p>
+        <p>The GitHub Pages build reads the Worker URL from the GitHub Actions variable <code>PERSONAL_AI_WORKER_URL</code>. No secret is placed in frontend source.</p>
+      </div>
+      <div class="panel">
+        <h2>Google integration</h2>
+        <p>Use the one-time Google connection flow to authorize the configured Google services and initialize the Personal AI database.</p>
+        <p><a class="button" href="./google-setup.html">Open Google Setup</a></p>
+      </div>
+      <div class="panel">
+        <h2>Secret handling</h2>
+        <p>OAuth client secrets, encryption keys, API keys and tokens belong in Cloudflare Worker secrets/KV. They are never entered into source-controlled frontend files.</p>
+      </div>
+    </section>
+  </main>
+  <script type="module">
+    import { api } from '../js/api.js';
+    const el = document.querySelector('#worker-state');
+    api('/health').then(data => { el.textContent = `Worker online · ${data.time}`; el.dataset.state = 'online'; })
+      .catch(error => { el.textContent = error.message || 'Worker is not reachable.'; el.dataset.state = 'offline'; });
+  </script>
+</body>
+</html>
