@@ -7,9 +7,16 @@ workers_dev = true
 APP_ENV = "production"
 FRONTEND_ORIGIN = "https://rafsanjamilbhuiya.github.io/personal-ai-google-ecosystem"
 
-# Google OAuth token persistence uses encrypted Cloudflare KV.
-# The real namespace ID is bound in the deployment environment.
-#
-# [[kv_namespaces]]
-# binding = "OAUTH_TOKEN_STORE"
-# id = "<REAL_KV_NAMESPACE_ID>"
+# Wrangler can provision this KV namespace during deployment.
+[[kv_namespaces]]
+binding = "OAUTH_TOKEN_STORE"
+
+[secrets]
+required = [
+  "OAUTH_STATE_SECRET",
+  "OAUTH_TOKEN_ENCRYPTION_KEY",
+  "GOOGLE_OAUTH_CLIENT_ID",
+  "GOOGLE_OAUTH_CLIENT_SECRET",
+  "GOOGLE_OAUTH_REDIRECT_URI",
+  "GOOGLE_SHEETS_DATABASE_ID"
+]
