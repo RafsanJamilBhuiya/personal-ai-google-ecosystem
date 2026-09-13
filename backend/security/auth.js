@@ -18,7 +18,7 @@ async function telegram(env, code, email) {
   if (!r.ok) throw new Error("TELEGRAM_DELIVERY_FAILED");
 }
 
-export function authConfigured(env) { return Boolean(env.OAUTH_TOKEN_STORE && env.GOOGLE_OAUTH_CLIENT_ID && env.GOOGLE_OAUTH_REDIRECT_URI && env.ADMIN_GOOGLE_EMAIL && env.OAUTH_STATE_SECRET && env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID); }
+export function authConfigured(env) { return Boolean(env.OAUTH_TOKEN_STORE && env.GOOGLE_OAUTH_CLIENT_ID && env.GOOGLE_OAUTH_CLIENT_SECRET && env.GOOGLE_OAUTH_REDIRECT_URI && env.ADMIN_GOOGLE_EMAIL && env.OAUTH_STATE_SECRET && env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID); }
 
 export async function beginAdminLogin(env) {
   if (!env.GOOGLE_OAUTH_CLIENT_ID || !env.GOOGLE_OAUTH_REDIRECT_URI || !env.OAUTH_STATE_SECRET) throw new Error("GOOGLE_LOGIN_NOT_CONFIGURED");
@@ -64,13 +64,13 @@ export async function verifyOtp(env, challenge, code) {
 }
 
 export async function getSession(env, request) {
-  const cookie=request.headers.get("cookie")||""; const m=cookie.match(/(?:^|;\\s*)personal_ai_session=([^;]+)/); if(!m) return null;
+  const cookie=request.headers.get("cookie")||""; const m=cookie.match(/(?:^|;\s*)personal_ai_session=([^;]+)/); if(!m) return null;
   const sid=decodeURIComponent(m[1]); const kv=store(env), session=await kv.get(`${SESSION_PREFIX}${sid}`,"json"); if(!session) return null;
   const now=Date.now(); if(now-session.createdAt>SESSION_MAX_MS || now-session.lastActiveAt>INACTIVITY_MS){await kv.delete(`${SESSION_PREFIX}${sid}`);return null;}
   session.lastActiveAt=now; await kv.put(`${SESSION_PREFIX}${sid}`,JSON.stringify(session),{expirationTtl:86400}); return {...session,sessionId:sid};
 }
 export async function logout(env,request){const s=await getRawSession(env,request);if(s?.sessionId) await store(env).delete(`${SESSION_PREFIX}${s.sessionId}`);}
-async function getRawSession(env,request){const cookie=request.headers.get("cookie")||"";const m=cookie.match(/(?:^|;\\s*)personal_ai_session=([^;]+)/);if(!m)return null;const sid=decodeURIComponent(m[1]);const session=await store(env).get(`${SESSION_PREFIX}${sid}`,"json");return session?{...session,sessionId:sid}:null;}
+async function getRawSession(env,request){const cookie=request.headers.get("cookie")||"";const m=cookie.match(/(?:^|;\s*)personal_ai_session=([^;]+)/);if(!m)return null;const sid=decodeURIComponent(m[1]);const session=await store(env).get(`${SESSION_PREFIX}${sid}`,"json");return session?{...session,sessionId:sid}:null;}
 export const sessionCookie = sid => `personal_ai_session=${encodeURIComponent(sid)}; Path=/; Max-Age=86400; HttpOnly; Secure; SameSite=None`;
 export const clearSessionCookie = "personal_ai_session=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=None";
 export const authConstants = Object.freeze({SESSION_MAX_MS,INACTIVITY_MS,OTP_TTL,MAX_ATTEMPTS});
