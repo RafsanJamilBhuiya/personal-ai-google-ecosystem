@@ -3,8 +3,9 @@ import assert from 'node:assert/strict';
 import { authConfigured, authConstants, sessionCookie, clearSessionCookie } from '../../backend/security/auth.js';
 
 test('auth configuration requires the complete admin verification chain', () => {
-  const env={OAUTH_TOKEN_STORE:{},GOOGLE_OAUTH_CLIENT_ID:'id',GOOGLE_OAUTH_REDIRECT_URI:'https://example.test/callback',ADMIN_GOOGLE_EMAIL:'admin@example.test',OAUTH_STATE_SECRET:'state',TELEGRAM_BOT_TOKEN:'bot',TELEGRAM_CHAT_ID:'chat'};
+  const env={OAUTH_TOKEN_STORE:{},GOOGLE_OAUTH_CLIENT_ID:'id',GOOGLE_OAUTH_CLIENT_SECRET:'secret',GOOGLE_OAUTH_REDIRECT_URI:'https://example.test/callback',ADMIN_GOOGLE_EMAIL:'admin@example.test',OAUTH_STATE_SECRET:'state',TELEGRAM_BOT_TOKEN:'bot',TELEGRAM_CHAT_ID:'chat'};
   assert.equal(authConfigured(env),true);
+  assert.equal(authConfigured({...env,GOOGLE_OAUTH_CLIENT_SECRET:''}),false);
   assert.equal(authConfigured({...env,TELEGRAM_CHAT_ID:''}),false);
 });
 
