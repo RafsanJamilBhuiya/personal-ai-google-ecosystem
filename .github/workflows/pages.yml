@@ -34,6 +34,17 @@ jobs:
             echo 'Worker URL is not configured; frontend will run in disconnected mode.'
             printf '%s\n' 'window.PERSONAL_AI_WORKER_URL = "";' > _site/js/runtime-config.js
           fi
+          for page in $(find _site/pages -type f -name '*.html' ! -name 'login.html'); do
+            python - "$page" <<'PY'
+import pathlib, sys
+p=pathlib.Path(sys.argv[1])
+s=p.read_text()
+marker='<script type="module" src="../js/admin-bootstrap.js"></script>'
+if marker not in s:
+    s=s.replace('</body>', marker+'\n</body>')
+    p.write_text(s)
+PY
+          done
       - uses: actions/upload-pages-artifact@v4
         with:
           path: _site
