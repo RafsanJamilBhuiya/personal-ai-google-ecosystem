@@ -1,3 +1,5 @@
+import { detectIntent } from "./semantic.js";
+
 const RULES = [
   ["system.status", /\b(status|health|system status)\b/, 0.98],
   ["google.calendar.list", /\b(list|show|view|upcoming).*(calendar|events|meetings)\b/, 0.92],
@@ -18,10 +20,11 @@ const RULES = [
 
 export function parseCommand(input) {
   const command = String(input?.command || "").trim();
-  if (!command) return { intent: "unknown", command: "", confidence: 0 };
+  const context = input?.context && typeof input.context === "object" ? input.context : {};
+  if (!command) return { intent: "unknown", command: "", confidence: 0, candidates: [] };
   const normalized = command.toLowerCase();
   for (const [intent, pattern, confidence] of RULES) {
-    if (pattern.test(normalized)) return { intent, command, confidence };
+    if (pattern.test(normalized)) return { intent, command, confidence, candidates: [{ intent, confidence }] };
   }
-  return { intent: "task.create", command, confidence: 0.50 };
+  return { ...detectIntent(command, context), command };
 }
