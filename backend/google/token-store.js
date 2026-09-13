@@ -6,7 +6,7 @@ const b64 = b => btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g,"
 const unb64 = s => Uint8Array.from(atob(String(s).replace(/-/g,"+").replace(/_/g,"/") + "===".slice((String(s).length+3)%4)), c=>c.charCodeAt(0));
 async function key(env){ if(!env.OAUTH_TOKEN_ENCRYPTION_KEY) throw new Error("OAUTH_TOKEN_ENCRYPTION_KEY is required"); const raw=await crypto.subtle.digest("SHA-256",enc.encode(env.OAUTH_TOKEN_ENCRYPTION_KEY)); return crypto.subtle.importKey("raw",raw,{name:"AES-GCM"},false,["encrypt","decrypt"]); }
 async function seal(env,value){ const iv=crypto.getRandomValues(new Uint8Array(12)); const ct=await crypto.subtle.encrypt({name:"AES-GCM",iv},await key(env),enc.encode(JSON.stringify(value))); return `${b64(iv)}.${b64(ct)}`; }
-async function unseal(env,value){ const [iv,ct]=String(value).split("."); if(!iv||!ct) throw new Error("INVALID_TOKEN_STORE_VALUE"); const plain=await crypto.subtle.decrypt({name:"AES-GCM",iv},await key(env),unb64(ct)); return JSON.parse(dec.decode(plain)); }
+async function unseal(env,value){ const [iv,ct]=String(value).split("."); if(!iv||!ct) throw new Error("INVALID_TOKEN_STORE_VALUE"); const plain=await crypto.subtle.decrypt({name:"AES-GCM",iv:unb64(iv)},await key(env),unb64(ct)); return JSON.parse(dec.decode(plain)); }
 const hasStore = env => Boolean(env.OAUTH_TOKEN_STORE);
 export async function saveTokens(env,tokens){ if(!hasStore(env)) throw new Error("OAUTH_TOKEN_STORE_KV binding is required"); await env.OAUTH_TOKEN_STORE.put(KEY,await seal(env,tokens)); }
 export async function loadTokens(env){ if(!hasStore(env)) throw new Error("OAUTH_TOKEN_STORE_KV binding is required"); const value=await env.OAUTH_TOKEN_STORE.get(KEY); return value?unseal(env,value):null; }
