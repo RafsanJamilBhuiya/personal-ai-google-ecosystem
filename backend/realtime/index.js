@@ -4,11 +4,17 @@ const encoder = new TextEncoder();
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const terminal = new Set(["completed", "failed", "cancelled", "timeout"]);
 
-function eventChunk(id, event, data) {
+export function eventChunk(id, event, data) {
   return `id: ${id}\nevent: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 
-function taskFingerprint(task) {
+export function taskProgress(task) {
+  const value = Number(task?.progress);
+  if (Number.isFinite(value)) return Math.min(100, Math.max(0, value));
+  return terminal.has(task?.status) ? 100 : 0;
+}
+
+export function taskFingerprint(task) {
   return JSON.stringify({
     status: task.status,
     progress: task.progress ?? "",
@@ -41,8 +47,7 @@ export function taskEventStream(env, taskId, { intervalMs = 1500, maxMs = 60000,
           const fingerprint = taskFingerprint(task);
           if (fingerprint !== lastFingerprint) {
             lastFingerprint = fingerprint;
-            const progress = Number.isFinite(Number(task.progress)) ? Number(task.progress) : terminal.has(task.status) ? 100 : 0;
-            send("task", { task, progress, stage: task.stage || task.status });
+            send("task", { task, progress: taskProgress(task), stage: task.stage || task.status });
           } else {
             send("heartbeat", { task_id: taskId, sequence, timestamp: new Date().toISOString() });
           }
@@ -60,11 +65,6 @@ export function taskEventStream(env, taskId, { intervalMs = 1500, maxMs = 60000,
   });
   return new Response(stream, {
     status: 200,
-    headers: {
-      "content-type": "text/event-stream; charset=utf-8",
-      "cache-control": "no-cache, no-transform",
-      "connection": "keep-alive",
-      "x-accel-buffering": "no"
-    }
+    headers: { "content-type": "text/event-stream; charset=utf-8", "cache-control": "no-cache, no-transform", "connection": "keep-alive", "x-accel-buffering": "no" }
   });
 }
