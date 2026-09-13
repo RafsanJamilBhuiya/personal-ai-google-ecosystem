@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin Login · Personal AI</title><link rel="stylesheet" href="../css/app.css"></head>
+<body><main><section class="auth-shell"><div class="panel auth-card"><p class="eyebrow">SECURE ADMIN ACCESS</p><h1>Personal AI + Google Ecosystem</h1><p id="message">Sign in with your Google account to continue.</p><button id="google-login" class="button" type="button">Continue with Google</button><form id="otp-form" hidden><label for="otp">Verification code</label><input id="otp" name="otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required><button class="button" type="submit">Verify &amp; Login</button></form><button id="logout" class="secondary" type="button" hidden>Logout</button></div></section></main>
+<script type="module">
+import { api } from '../js/api.js';
+const message=document.querySelector('#message'), login=document.querySelector('#google-login'), form=document.querySelector('#otp-form'), logout=document.querySelector('#logout');
+const challenge=new URLSearchParams(location.search).get('challenge');
+const setMessage=(x)=>message.textContent=x;
+async function status(){try{const s=await api('/api/auth/status');if(s.authenticated){setMessage(`Signed in as ${s.email}`);login.hidden=true;form.hidden=true;logout.hidden=false;setTimeout(()=>location.href='./dashboard.html',500);}}catch{}}
+if(challenge){login.hidden=true;form.hidden=false;setMessage('Verification code has been sent to your registered verification channel.');}
+login.onclick=async()=>{login.disabled=true;try{const r=await api('/api/auth/google/url');location.href=r.authorization_url;}catch(e){setMessage(e.message||'Google login is not configured.');login.disabled=false;}};
+form.onsubmit=async e=>{e.preventDefault();const code=document.querySelector('#otp').value.trim();try{const r=await api('/api/auth/otp',{method:'POST',credentials:'include',body:JSON.stringify({challenge,code})});if(r.authenticated){setMessage(`Welcome, ${r.email}`);setTimeout(()=>location.href='./dashboard.html',300);}}catch(err){setMessage(err.message||'Verification failed.');}};
+logout.onclick=async()=>{await api('/api/auth/logout',{method:'POST',credentials:'include'}).catch(()=>{});location.reload();};
+status();
+</script></body></html>
