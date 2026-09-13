@@ -7,7 +7,6 @@ workers_dev = true
 APP_ENV = "production"
 FRONTEND_ORIGIN = "https://rafsanjamilbhuiya.github.io/personal-ai-google-ecosystem"
 
-# Wrangler can provision this KV namespace during deployment.
 [[kv_namespaces]]
 binding = "OAUTH_TOKEN_STORE"
 
@@ -18,5 +17,8 @@ required = [
   "GOOGLE_OAUTH_CLIENT_ID",
   "GOOGLE_OAUTH_CLIENT_SECRET",
   "GOOGLE_OAUTH_REDIRECT_URI",
-  "GOOGLE_SHEETS_DATABASE_ID"
+  "GOOGLE_SHEETS_DATABASE_ID",
+  "ADMIN_GOOGLE_EMAIL",
+  "TELEGRAM_BOT_TOKEN",
+  "TELEGRAM_CHAT_ID"
 ]
