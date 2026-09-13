@@ -32,6 +32,7 @@ const json = (data, status, origin) => {
   Object.entries(headers(origin)).forEach(([k, v]) => response.headers.set(k, v));
   return response;
 };
+const withCors = (response, origin) => { Object.entries(headers(origin)).forEach(([k, v]) => response.headers.set(k, v)); return response; };
 
 export default { async fetch(request, env) {
   const origin = originFor(env, request);
@@ -43,7 +44,7 @@ export default { async fetch(request, env) {
   const router = createRouter(new Map([
     ["GET /health", async () => json({ ok: true, service: "worker", time: new Date().toISOString() }, 200, origin)],
     ["GET /api/status", async () => json({ ok: true, environment: env.APP_ENV || "development", integrations: { google: [...googleServices.values()].map(({ id, status, enabled }) => ({ id, status, enabled })), ai: aiRouter.listProviders() } }, 200, origin)],
-    ["GET /api/realtime", async req => { const u = new URL(req.url); const id = u.searchParams.get("taskId"); if (!id) throw new HttpError(400, "TASK_ID_REQUIRED", "taskId is required"); const lastEventId = Number(u.searchParams.get("lastEventId") || req.headers.get("last-event-id") || 0); return taskEventStream(env, id, { lastEventId: Number.isFinite(lastEventId) ? lastEventId : 0 }); }],
+    ["GET /api/realtime", async req => { const u = new URL(req.url); const id = u.searchParams.get("taskId"); if (!id) throw new HttpError(400, "TASK_ID_REQUIRED", "taskId is required"); const lastEventId = Number(u.searchParams.get("lastEventId") || req.headers.get("last-event-id") || 0); return withCors(taskEventStream(env, id, { lastEventId: Number.isFinite(lastEventId) ? lastEventId : 0 }), origin); }],
     ["GET /api/google/auth/url", async () => json({ ok: true, authorization_url: await beginOAuth(env) }, 200, origin)],
     ["GET /api/google/auth/callback", async req => { const u = new URL(req.url); return json({ ok: true, ...await completeOAuth(env, u.searchParams.get("state"), u.searchParams.get("code")), message: "Google authorization stored securely in the configured token store." }, 200, origin); }],
     ["POST /api/google/auth/disconnect", async () => { await clearTokens(env); return json({ ok: true, connected: false }, 200, origin); }],
