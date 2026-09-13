@@ -8,7 +8,10 @@ APP_ENV = "production"
 # Set this to the exact deployed frontend origin before production use.
 FRONTEND_ORIGIN = ""
 
-# Create this KV namespace in Cloudflare and replace the placeholder ID before deploy.
-[[kv_namespaces]]
-binding = "OAUTH_TOKEN_STORE"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
+# Google OAuth token storage is configured after the target Cloudflare KV
+# namespace exists. Add the binding below with the real namespace ID before
+# enabling live Google OAuth persistence.
+#
+# [[kv_namespaces]]
+# binding = "OAUTH_TOKEN_STORE"
+# id = "<REAL_KV_NAMESPACE_ID>"
