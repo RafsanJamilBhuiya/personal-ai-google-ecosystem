@@ -5,12 +5,10 @@ workers_dev = true
 
 [vars]
 APP_ENV = "production"
-# Set this to the exact deployed frontend origin before production use.
-FRONTEND_ORIGIN = ""
+FRONTEND_ORIGIN = "https://rafsanjamilbhuiya.github.io/personal-ai-google-ecosystem"
 
-# Google OAuth token storage is configured after the target Cloudflare KV
-# namespace exists. Add the binding below with the real namespace ID before
-# enabling live Google OAuth persistence.
+# Google OAuth token persistence uses encrypted Cloudflare KV.
+# The real namespace ID is bound in the deployment environment.
 #
 # [[kv_namespaces]]
 # binding = "OAUTH_TOKEN_STORE"
