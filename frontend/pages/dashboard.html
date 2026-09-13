@@ -1,1 +1,32 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dashboard · Personal AI</title><link rel="stylesheet" href="../css/app.css"></head><body><header><a href="../index.html">Personal AI</a><nav><a href="dashboard.html">Dashboard</a><a href="chat.html">Chat</a><a href="tasks.html">Tasks</a><a href="settings.html">Settings</a></nav></header><main><section><h1>Dashboard</h1><div class="grid"><article><h2>System</h2><p id="backend-status">Checking…</p></article><article><h2>Tasks</h2><p id="task-count">0</p></article><article><h2>Google</h2><p id="google-status">Checking…</p></article><article><h2>AI</h2><p id="ai-status">Checking…</p></article></div><article class="panel"><h2>Recent tasks</h2><ul id="recent-tasks"><li>Loading…</li></ul></article></section></main><script type="module" src="../js/dashboard.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Dashboard · Personal AI</title>
+  <link rel="stylesheet" href="../css/app.css">
+</head>
+<body>
+  <header>
+    <a href="../index.html"><strong>Personal AI</strong></a>
+    <nav><a href="dashboard.html">Dashboard</a><a href="chat.html">Chat</a><a href="tasks.html">Tasks</a><a href="settings.html">Settings</a></nav>
+  </header>
+  <main>
+    <section class="dashboard-head">
+      <div><p class="eyebrow">CONTROL CENTER</p><h1>Personal AI Dashboard</h1><p>Live status for the Worker, Google connection, AI providers and task execution.</p></div>
+      <div class="dashboard-actions"><button id="google-connect" type="button">Connect Google</button><button id="database-init" type="button" class="secondary">Initialize Database</button></div>
+    </section>
+    <section class="dashboard-section"><div class="grid dashboard-cards">
+      <article class="status-card"><span>Backend</span><strong id="backend-status">Checking…</strong><small id="backend-time">—</small></article>
+      <article class="status-card"><span>Google</span><strong id="google-status">Checking…</strong><small id="google-auth">Auth: checking…</small></article>
+      <article class="status-card"><span>AI</span><strong id="ai-status">Checking…</strong><small id="ai-detail">Providers: checking…</small></article>
+      <article class="status-card"><span>Tasks</span><strong id="task-count">0</strong><small id="task-detail">Live task store</small></article>
+    </div></section>
+    <section class="dashboard-section"><div class="panel"><div class="panel-head"><h2>Google Services</h2><span id="google-scope-summary">—</span></div><div id="google-services" class="service-grid"><p>Loading…</p></div></div></section>
+    <section class="dashboard-section"><div class="panel"><div class="panel-head"><h2>AI Providers</h2><span id="ai-provider-summary">—</span></div><div id="ai-providers" class="service-grid"><p>Loading…</p></div></div></section>
+    <section class="dashboard-section"><div class="panel"><div class="panel-head"><h2>Recent Tasks</h2><a href="tasks.html">Open task manager →</a></div><ul id="recent-tasks" class="task-list"><li>Loading…</li></ul></div></section>
+    <section class="dashboard-section"><div id="dashboard-message" class="notice" role="status" aria-live="polite">Dashboard is loading live data…</div></section>
+  </main>
+  <script type="module" src="../js/dashboard.js"></script>
+</body>
+</html>
