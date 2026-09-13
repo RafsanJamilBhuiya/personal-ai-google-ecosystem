@@ -1,5 +1,7 @@
+import { oauthStatus } from "./token-store.js";
+
 const SERVICES = [
-  { id: "sheets", name: "Google Sheets API", capability: "database", required: "GOOGLE_SPREADSHEET_ID" },
+  { id: "sheets", name: "Google Sheets API", capability: "database", required: "GOOGLE_SHEETS_DATABASE_ID" },
   { id: "drive", name: "Google Drive API", capability: "files" },
   { id: "gmail", name: "Gmail API", capability: "email" },
   { id: "calendar", name: "Google Calendar API", capability: "calendar" },
@@ -9,13 +11,24 @@ const SERVICES = [
   { id: "maps", name: "Google Maps JavaScript API", capability: "maps" }
 ];
 
-export function createGoogleServiceRegistry(env = {}) {
+export async function createGoogleServiceRegistry(env = {}, auth = null) {
   const oauthConfigured = Boolean(env.GOOGLE_OAUTH_CLIENT_ID && env.GOOGLE_OAUTH_CLIENT_SECRET && env.GOOGLE_OAUTH_REDIRECT_URI);
-  const tokenConfigured = Boolean(env.GOOGLE_ACCESS_TOKEN || env.GOOGLE_REFRESH_TOKEN);
-  return new Map(SERVICES.map((service) => [service.id, {
-    ...service,
-    status: oauthConfigured && tokenConfigured ? "available" : oauthConfigured ? "awaiting-token" : "not-configured",
-    enabled: oauthConfigured && tokenConfigured
-  }]));
+  const connected = auth?.connected === true;
+  return new Map(SERVICES.map((service) => {
+    const databaseReady = service.id !== "sheets" || Boolean(env.GOOGLE_SHEETS_DATABASE_ID);
+    const status = !oauthConfigured
+      ? "not-configured"
+      : !connected
+        ? "awaiting-authorization"
+        : !databaseReady
+          ? "configuration-required"
+          : "available";
+    return [service.id, { ...service, status, enabled: status === "available" }];
+  }));
 }
+
+export async function getGoogleServiceRegistry(env = {}) {
+  return createGoogleServiceRegistry(env, await oauthStatus(env));
+}
+
 export { SERVICES as GOOGLE_SERVICES };
