@@ -9,19 +9,26 @@ export function getIntegrationRegistry() {
   return INTEGRATION_REGISTRY.map(item => ({ ...item, services: [...item.services] }));
 }
 
+function credentialStatus(configured, connected = false) {
+  if (connected) return "connected";
+  return configured ? "configured" : "not_configured";
+}
+
 export function getIntegrationStatus({ googleAuth, aiProviders = [], env = {} } = {}) {
-  const aiReady = aiProviders.some(provider => provider.status === "ready" || provider.enabled === true);
+  const aiReady = aiProviders.some(provider => provider.status === "available" || provider.status === "ready" || provider.enabled === true);
+  const cloudflareConfigured = Boolean(env.CLOUDFLARE_API_TOKEN);
+  const githubConfigured = Boolean(env.GITHUB_TOKEN || env.GITHUB_API_TOKEN);
   return getIntegrationRegistry().map(item => {
     if (item.id === "google") {
-      return { ...item, status: googleAuth?.connected ? "connected" : "not_configured", connected: Boolean(googleAuth?.connected) };
+      const connected = Boolean(googleAuth?.connected);
+      return { ...item, status: credentialStatus(connected, connected), connected };
     }
     if (item.id === "cloudflare") {
-      const configured = Boolean(env.CLOUDFLARE_API_TOKEN || env.CLOUDFLARE_ACCOUNT_ID || env.CLOUDFLARE_ACCOUNT_ID);
-      return { ...item, status: configured ? "configured" : "not_configured", connected: configured };
+      return { ...item, status: credentialStatus(cloudflareConfigured), connected: false, credentialConfigured: cloudflareConfigured };
     }
     if (item.id === "github") {
-      return { ...item, status: "configured", connected: true };
+      return { ...item, status: credentialStatus(githubConfigured), connected: false, credentialConfigured: githubConfigured };
     }
-    return { ...item, status: aiReady ? "configured" : "not_configured", connected: aiReady };
+    return { ...item, status: credentialStatus(aiReady), connected: aiReady, credentialConfigured: aiReady };
   });
 }
