@@ -5,7 +5,7 @@ import { createToolRegistry } from "./execution/tools.js";
 import { createProviderRegistry } from "./ai/registry.js";
 import { AIRouter } from "./ai/router.js";
 import { createGoogleServiceRegistry } from "./google/registry.js";
-import { beginOAuth, completeOAuth, clearTokens, loadTokens } from "./google/token-store.js";
+import { beginOAuth, completeOAuth, clearTokens, oauthStatus } from "./google/token-store.js";
 import { readValues, appendValues, updateValues } from "./google/sheets.js";
 import { sendMessage } from "./google/services/gmail.js";
 import { createEvent, listEvents } from "./google/services/calendar.js";
@@ -45,10 +45,11 @@ export default { async fetch(request, env) {
     ["GET /health", async () => json({ ok: true, service: "worker", time: new Date().toISOString() }, 200, origin)],
     ["GET /api/status", async () => json({ ok: true, environment: env.APP_ENV || "development", integrations: { google: [...googleServices.values()].map(({ id, status, enabled }) => ({ id, status, enabled })), ai: aiRouter.listProviders() } }, 200, origin)],
     ["GET /api/realtime", async req => { const u = new URL(req.url); const id = u.searchParams.get("taskId"); if (!id) throw new HttpError(400, "TASK_ID_REQUIRED", "taskId is required"); const lastEventId = Number(u.searchParams.get("lastEventId") || req.headers.get("last-event-id") || 0); return withCors(taskEventStream(env, id, { lastEventId: Number.isFinite(lastEventId) ? lastEventId : 0 }), origin); }],
+    ["GET /api/google/setup/status", async () => json({ ok: true, auth: await oauthStatus(env), services: [...googleServices.values()].map(({ id, name, status, enabled }) => ({ id, name: name || id, status, enabled })) }, 200, origin)],
     ["GET /api/google/auth/url", async () => json({ ok: true, authorization_url: await beginOAuth(env) }, 200, origin)],
     ["GET /api/google/auth/callback", async req => { const u = new URL(req.url); return json({ ok: true, ...await completeOAuth(env, u.searchParams.get("state"), u.searchParams.get("code")), message: "Google authorization stored securely in the configured token store." }, 200, origin); }],
     ["POST /api/google/auth/disconnect", async () => { await clearTokens(env); return json({ ok: true, connected: false }, 200, origin); }],
-    ["GET /api/google/auth/status", async () => { const t = await loadTokens(env); return json({ ok: true, connected: Boolean(t?.access_token), scope: t?.scope || "" }, 200, origin); }],
+    ["GET /api/google/auth/status", async () => json({ ok: true, ...(await oauthStatus(env)) }, 200, origin)],
     ["POST /api/google/database/initialize", async () => json({ ok: true, result: await initializeDatabase(env) }, 200, origin)],
     ["GET /api/google/sheets/values", async req => { const u = new URL(req.url); const range = u.searchParams.get("range"); if (!range) throw new HttpError(400, "RANGE_REQUIRED", "range is required"); return json({ ok: true, result: await readValues(env, range, u.searchParams.get("spreadsheetId") || env.GOOGLE_SHEETS_DATABASE_ID) }, 200, origin); }],
     ["POST /api/google/sheets/values", async req => { const b = await req.json(); if (!b.range || !Array.isArray(b.values)) throw new HttpError(400, "INVALID_SHEETS_PAYLOAD", "range and values[] are required"); const result = b.mode === "update" ? await updateValues(env, b.range, b.values, b.spreadsheetId || env.GOOGLE_SHEETS_DATABASE_ID) : await appendValues(env, b.range, b.values, b.spreadsheetId || env.GOOGLE_SHEETS_DATABASE_ID); return json({ ok: true, result }, 200, origin); }],
@@ -62,7 +63,7 @@ export default { async fetch(request, env) {
     ["GET /api/google/forms/form", async req => { const id = new URL(req.url).searchParams.get("id"); if (!id) throw new HttpError(400, "FORM_ID_REQUIRED", "id is required"); return json({ ok: true, result: await forms.get(env, id) }, 200, origin)],
     ["POST /api/google/forms/form", async req => json({ ok: true, result: await forms.create(env, (await req.json()).info) }, 200, origin)],
     ["GET /api/google/blogger/posts", async req => { const u = new URL(req.url); const id = u.searchParams.get("blogId"); if (!id) throw new HttpError(400, "BLOG_ID_REQUIRED", "blogId is required"); return json({ ok: true, result: await blogger.posts(env, id, { maxResults: u.searchParams.get("maxResults") || 20 }) }, 200, origin)],
-    ["POST /api/google/blogger/posts", async req => { const b = await req.json(); return json({ ok: true, result: await blogger.createPost(env, b.blogId, b.post) }, 200, origin)],
+    ["POST /api/google/blogger/posts", async req => { const b = await req.json(); return json({ ok: true, result: await blogger.createPost(env, b.blogId, b.post) }, 200, origin); }],
     ["POST /api/ai/generate", async req => json({ ok: true, result: await aiRouter.generate(await req.json()) }, 200, origin)],
     ["POST /api/tasks", async req => { const b = await req.json(); const task = await createTask(env, b); return json({ ok: true, task }, 201, origin)],
     ["GET /api/tasks", async () => json({ ok: true, result: await readSheet(env, "tasks") }, 200, origin)],
