@@ -27,9 +27,34 @@ jobs:
       - run: npm install
       - run: npm run check
       - run: npm test
+      - name: Normalize Cloudflare API token
+        env:
+          RAW_CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          token="$RAW_CLOUDFLARE_API_TOKEN"
+          token="${token#Bearer }"
+          token="${token#bearer }"
+          token="${token#\"}"
+          token="${token%\"}"
+          token="$(printf '%s' "$token" | tr -d '\r\n')"
+          if [ -z "$token" ]; then
+            echo 'CLOUDFLARE_API_TOKEN is empty.'
+            exit 1
+          fi
+          if [[ "$token" == cfut_* || "$token" == cfat_* ]]; then
+            echo 'Cloudflare token format detected.'
+          elif [[ "$token" =~ ^[A-Za-z0-9]{40}$ ]]; then
+            echo 'Legacy Cloudflare token format detected.'
+          else
+            echo 'Cloudflare token format is not recognized. Recreate/copy the token exactly from Cloudflare.'
+            exit 1
+          fi
+          echo "::add-mask::$token"
+          echo "CF_API_TOKEN=$token" >> "$GITHUB_ENV"
       - name: Deploy Worker
         uses: cloudflare/wrangler-action@v4
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          apiToken: ${{ env.CF_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy --experimental-auto-create
