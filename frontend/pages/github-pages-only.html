@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Personal AI — GitHub Pages Mode</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <main class="container">
+    <h1>Personal AI + Google Ecosystem</h1>
+    <p>GitHub Pages-only runtime is active.</p>
+    <div id="runtime-status"></div>
+  </main>
+  <script src="../js/pages-mode.js"></script>
+  <script>
+    document.getElementById('runtime-status').textContent =
+      'Runtime: ' + window.PersonalAIPages.mode + ' · Backend: disabled · Browser storage: enabled';
+  </script>
+</body>
+</html>
